@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>視覺助理 - 無障礙版</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        h1 {
+            font-size: 1.2rem;
+            color: #00d4ff;
+            margin-bottom: 12px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .container {
+            max-width: 900px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        video, canvas { display: none; }
+
+        .btn-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        .btn-row button {
+            flex: 1;
+            padding: 28px 12px;
+            border: 3px solid transparent;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            font-weight: 700;
+            transition: all 0.15s;
+            min-height: 90px;
+            letter-spacing: 1px;
+            word-break: keep-all;
+        }
+        #captureBtn {
+            background: #00d4ff;
+            color: #000;
+        }
+        #askBtn {
+            background: #7c3aed;
+            color: #fff;
+        }
+        #speakBtn {
+            background: #0ea5e9;
+            color: #fff;
+        }
+        button:focus { outline: 4px solid #fbbf24; outline-offset: 3px; }
+        button:active { transform: scale(0.95); }
+        button:disabled { opacity: 0.35; }
+        .btn-row button:hover { border-color: #fbbf24; }
+
+        #response {
+            background: #111;
+            border-radius: 10px;
+            padding: 10px 14px;
+            min-height: 48px;
+            max-height: 120px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #ccc;
+            border: 1px solid #333;
+            scrollbar-width: thin;
+        }
+
+        #question {
+            width: 100%;
+            padding: 16px 14px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background: #111;
+            color: #eee;
+            font-size: 1.05rem;
+        }
+        #question:focus { border-color: #00d4ff; outline: none; }
+
+        #status {
+            margin-top: 4px;
+            padding: 6px 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
+            min-height: 0;
+        }
+        .loading { background: #fbbf24; color: #000; }
+        .error   { background: #ef4444; color: #fff; }
+        .success { background: #22c55e; color: #fff; }
+        .info    { background: #1e3a5f; color: #fff; }
+
+        .api-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .api-section label {
+            color: #00d4ff;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        .api-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .api-row input {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background: #111;
+            color: #eee;
+            font-size: 1rem;
+        }
+        .api-row input:focus { border-color: #00d4ff; outline: none; }
+        .api-row a {
+            padding: 12px 16px;
+            background: #4285f4;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .api-row a:focus { outline: 4px solid #fbbf24; outline-offset: 3px; }
+
+        .file-label {
+            display: block;
+            text-align: center;
+            padding: 18px;
+            background: #1a1a3e;
+            border: 2px dashed #444;
+            border-radius: 12px;
+            color: #888;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .file-label:focus { border-color: #fbbf24; outline: none; }
+        .file-label:hover { border-color: #00d4ff; color: #ccc; }
+        .file-label input { display: none; }
+
+        @media (max-width: 600px) {
+            body { padding: 8px; }
+            h1 { font-size: 1rem; margin-bottom: 8px; }
+            .btn-row { gap: 6px; }
+            .btn-row button {
+                padding: 20px 8px;
+                font-size: 1rem;
+                min-height: 70px;
+                border-radius: 12px;
+            }
+            #question { font-size: 0.95rem; padding: 14px; }
+            .api-row { flex-direction: column; }
+            .api-row a { width: 100%; text-align: center; }
+        }
+        @media (max-width: 400px) {
+            .btn-row button { font-size: 0.85rem; padding: 16px 4px; min-height: 60px; }
+        }
+
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; padding: 0;
+            margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;
+        }
+    </style>
+</head>
+<body>
+    <h1 aria-label="視覺助理">視覺助理</h1>
+
+    <div class="container" role="main" aria-label="主要操作區">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+
+        <div class="btn-row" role="toolbar" aria-label="功能按鈕">
+            <button id="captureBtn" aria-label="擷取畫面：啟動相機拍照">📷 擷取畫面</button>
+            <button id="askBtn" disabled aria-label="詢問圖片：分析目前圖片">🤔 詢問圖片</button>
+            <button id="speakBtn" disabled aria-label="朗讀回覆：用語音讀出回覆內容">🔊 朗讀回覆</button>
+        </div>
+
+        <label for="question" class="sr-only">輸入您要詢問的問題</label>
+        <input type="text" id="question" value="這張圖片裡有什麼？請用繁體中文簡短回答" aria-label="輸入問題">
+
+        <div id="response" aria-live="polite" aria-label="回覆內容" tabindex="0">回覆將顯示在此</div>
+        <div id="status" aria-live="assertive" aria-label="狀態訊息"></div>
+
+        <label class="file-label" tabindex="0" role="button" aria-label="從檔案選擇圖片">
+            📁 或從檔案選擇圖片
+            <input type="file" id="fileInput" accept="image/*">
+        </label>
+
+        <div class="api-section">
+            <label for="apiKey">Gemini API Key</label>
+            <div class="api-row">
+                <input type="password" id="apiKey" placeholder="輸入您的 Gemini API Key" aria-label="Gemini API Key">
+                <a href="https://aistudio.google.com/api-keys" target="_blank" aria-label="取得 Gemini API Key">取得 Key</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function(){
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const captureBtn = document.getElementById('captureBtn');
+            const askBtn = document.getElementById('askBtn');
+            const speakBtn = document.getElementById('speakBtn');
+            const question = document.getElementById('question');
+            const status = document.getElementById('status');
+            const responseDiv = document.getElementById('response');
+            const apiKeyInput = document.getElementById('apiKey');
+            const fileInput = document.getElementById('fileInput');
+
+            let capturedImage = null;
+            let lastResponse = '';
+            let apiKey = '';
+            let modelName = 'gemini-2.5-flash';
+            let webcamStream = null;
+            let mediaRecorder = null;
+
+            function speak(text, callback) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 1.0;
+                utterance.onend = () => { if (callback) callback(); };
+                window.speechSynthesis.speak(utterance);
+            }
+
+            function setStatus(msg, type) {
+                status.textContent = msg;
+                status.className = type || '';
+            }
+
+            async function initWebcam() {
+                try {
+                    webcamStream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                    });
+                    video.srcObject = webcamStream;
+                    await video.play();
+                    setStatus('相機就緒', 'success');
+                } catch (err) {
+                    setStatus('相機無法啟動：' + err.message, 'error');
+                }
+            }
+
+            function captureFromVideo() {
+                if (!video.videoWidth || !video.videoHeight) {
+                    setStatus('相機尚未就緒', 'error');
+                    speak('相機尚未就緒');
+                    return false;
+                }
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                capturedImage = canvas.toDataURL('image/jpeg', 0.85);
+                askBtn.disabled = false;
+                setStatus('圖片已擷取！', 'success');
+                speak('圖片已擷取，可以詢問了');
+                return true;
+            }
+
+            function loadImageFromFile(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        canvas.getContext('2d').drawImage(img, 0, 0);
+                        capturedImage = canvas.toDataURL('image/jpeg', 0.85);
+                        askBtn.disabled = false;
+                        setStatus('圖片已載入！', 'success');
+                        speak('圖片已載入，可以詢問了');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            captureBtn.addEventListener('click', () => {
+                captureFromVideo();
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    loadImageFromFile(e.target.files[0]);
+                }
+            });
+
+            apiKeyInput.addEventListener('input', (e) => {
+                apiKey = e.target.value.trim();
+            });
+
+            async function askGemini() {
+                if (!capturedImage) {
+                    setStatus('請先擷取或選擇圖片', 'error');
+                    speak('請先擷取或選擇圖片');
+                    return;
+                }
+                if (!apiKey) {
+                    setStatus('請輸入 API Key', 'error');
+                    speak('請輸入 API Key');
+                    return;
+                }
+
+                askBtn.disabled = true;
+                captureBtn.disabled = true;
+                setStatus('分析中...', 'loading');
+                responseDiv.textContent = '思考中...';
+                speak('正在分析圖片，請稍候');
+
+                const base64Data = capturedImage.split(',')[1];
+                const userQuestion = question.value.trim() || '這張圖片裡有什麼？';
+
+                const payload = {
+                    contents: [{
+                        parts: [
+                            { text: userQuestion + ' 請用繁體中文回答，保持簡短（一到兩句話以內）。' },
+                            { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
+                        ]
+                    }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 2048
+                    }
+                };
+
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!res.ok) {
+                        const errData = await res.json();
+                        throw new Error(errData.error?.message || `API 錯誤 (${res.status})`);
+                    }
+
+                    const data = await res.json();
+                    lastResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+                    responseDiv.textContent = lastResponse;
+                    speakBtn.disabled = false;
+                    setStatus('分析完成！', 'success');
+                    speak('分析完成，' + lastResponse);
+                } catch (err) {
+                    lastResponse = '錯誤：' + err.message;
+                    responseDiv.textContent = lastResponse;
+                    setStatus('發生錯誤', 'error');
+                    speak('發生錯誤：' + err.message.substring(0, 60));
+                } finally {
+                    askBtn.disabled = false;
+                    captureBtn.disabled = false;
+                }
+            }
+
+            askBtn.addEventListener('click', askGemini);
+            question.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') askGemini();
+            });
+
+            speakBtn.addEventListener('click', () => {
+                if (lastResponse) {
+                    speak(lastResponse);
+                } else {
+                    speak('尚無回覆內容');
+                }
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === ' ' && e.target === document.body) {
+                    e.preventDefault();
+                    captureFromVideo();
+                }
+            });
+
+            let started = false;
+            async function boot() {
+                setStatus('啟動中...', 'info');
+                await initWebcam();
+
+                setTimeout(() => {
+                    speak('歡迎使用視覺助理。下方左邊是擷取畫面，中間是詢問圖片，右邊是朗讀回覆內容。您也可以從檔案選擇圖片。', () => {
+                        setStatus('就緒，請操作', 'success');
+                    });
+                }, 1000);
+                started = true;
+            }
+
+            document.addEventListener('DOMContentLoaded', boot);
+        })();
+    </script>
+</body>
+</html>
