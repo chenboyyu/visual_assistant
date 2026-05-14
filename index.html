@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>視覺助理 - 無障礙版</title>
+    <title>視覺助理 - 無障礙大按鈕版</title>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -14,8 +14,8 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            align-items: center;
             padding: 12px;
+            padding-bottom: 220px; /* 為下方大按鈕預留空間 */
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
@@ -24,199 +24,152 @@
             color: #00d4ff;
             margin-bottom: 12px;
             text-align: center;
-            letter-spacing: 1px;
         }
         .container {
             max-width: 900px;
             width: 100%;
+            margin: 0 auto;
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
         video, canvas { display: none; }
 
-        .btn-row {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-        .btn-row button {
-            flex: 1;
-            padding: 28px 12px;
-            border: 3px solid transparent;
-            border-radius: 16px;
-            cursor: pointer;
-            font-size: 1.3rem;
-            font-weight: 700;
-            transition: all 0.15s;
-            min-height: 90px;
-            letter-spacing: 1px;
-            word-break: keep-all;
-        }
-        #captureBtn {
-            background: #00d4ff;
-            color: #000;
-        }
-        #askBtn {
-            background: #7c3aed;
-            color: #fff;
-        }
-        #speakBtn {
-            background: #0ea5e9;
-            color: #fff;
-        }
-        button:focus { outline: 4px solid #fbbf24; outline-offset: 3px; }
-        button:active { transform: scale(0.95); }
-        button:disabled { opacity: 0.35; }
-        .btn-row button:hover { border-color: #fbbf24; }
-
-        #response {
+        /* 下方固定按鈕區 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
             background: #111;
-            border-radius: 10px;
-            padding: 10px 14px;
-            min-height: 48px;
-            max-height: 120px;
-            overflow-y: auto;
-            font-size: 0.85rem;
-            line-height: 1.5;
-            color: #ccc;
-            border: 1px solid #333;
-            scrollbar-width: thin;
+            padding: 15px;
+            display: flex;
+            gap: 12px;
+            border-top: 2px solid #333;
+            z-index: 100;
+        }
+
+        .bottom-nav button {
+            flex: 1;
+            height: 150px; /* 大幅增加高度 */
+            border: 4px solid transparent;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1.6rem; /* 加大字體 */
+            font-weight: 900;
+            transition: all 0.1s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+        }
+
+        .bottom-nav button span {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        #captureBtn { background: #00d4ff; color: #000; }
+        #askBtn { background: #7c3aed; color: #fff; }
+        #speakBtn { background: #0ea5e9; color: #fff; }
+
+        button:focus { outline: 6px solid #fbbf24; outline-offset: -6px; }
+        button:active { transform: scale(0.92); }
+        button:disabled { opacity: 0.2; }
+
+        /* 回覆顯示區 */
+        #response {
+            background: #1a1a1a;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 150px;
+            font-size: 1.3rem; /* 讓字大一點好讀 */
+            line-height: 1.6;
+            color: #fff;
+            border: 2px solid #444;
         }
 
         #question {
             width: 100%;
-            padding: 16px 14px;
+            padding: 15px;
             border: 2px solid #333;
             border-radius: 10px;
             background: #111;
             color: #eee;
-            font-size: 1.05rem;
+            font-size: 1.1rem;
         }
-        #question:focus { border-color: #00d4ff; outline: none; }
 
         #status {
-            margin-top: 4px;
-            padding: 6px 10px;
+            padding: 10px;
             border-radius: 8px;
             text-align: center;
-            font-size: 0.8rem;
-            min-height: 0;
+            font-size: 1rem;
+            font-weight: bold;
         }
         .loading { background: #fbbf24; color: #000; }
         .error   { background: #ef4444; color: #fff; }
         .success { background: #22c55e; color: #fff; }
-        .info    { background: #1e3a5f; color: #fff; }
 
-        .api-section {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            margin-top: 6px;
-        }
-        .api-section label {
-            color: #00d4ff;
-            font-weight: 600;
-            font-size: 0.85rem;
-        }
-        .api-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .api-row input {
-            flex: 1;
-            padding: 14px;
-            border: 2px solid #333;
-            border-radius: 10px;
+        /* API 與 檔案設定區 (縮小一點，因為不常用) */
+        .settings-area {
             background: #111;
-            color: #eee;
-            font-size: 1rem;
-        }
-        .api-row input:focus { border-color: #00d4ff; outline: none; }
-        .api-row a {
-            padding: 12px 16px;
-            background: #4285f4;
-            color: #fff;
-            text-decoration: none;
+            padding: 10px;
             border-radius: 10px;
-            font-weight: 600;
+            margin-top: 10px;
             font-size: 0.9rem;
-            white-space: nowrap;
         }
-        .api-row a:focus { outline: 4px solid #fbbf24; outline-offset: 3px; }
-
+        .api-row { display: flex; gap: 8px; margin-top: 5px; }
+        .api-row input { flex: 1; padding: 10px; background: #000; color: #fff; border: 1px solid #444; border-radius: 5px; }
+        
         .file-label {
             display: block;
             text-align: center;
-            padding: 18px;
-            background: #1a1a3e;
-            border: 2px dashed #444;
-            border-radius: 12px;
-            color: #888;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.2s;
+            padding: 15px;
+            background: #222;
+            border: 1px dashed #666;
+            border-radius: 10px;
+            margin: 10px 0;
+            color: #aaa;
         }
-        .file-label:focus { border-color: #fbbf24; outline: none; }
-        .file-label:hover { border-color: #00d4ff; color: #ccc; }
         .file-label input { display: none; }
 
-        @media (max-width: 600px) {
-            body { padding: 8px; }
-            h1 { font-size: 1rem; margin-bottom: 8px; }
-            .btn-row { gap: 6px; }
-            .btn-row button {
-                padding: 20px 8px;
-                font-size: 1rem;
-                min-height: 70px;
-                border-radius: 12px;
-            }
-            #question { font-size: 0.95rem; padding: 14px; }
-            .api-row { flex-direction: column; }
-            .api-row a { width: 100%; text-align: center; }
-        }
-        @media (max-width: 400px) {
-            .btn-row button { font-size: 0.85rem; padding: 16px 4px; min-height: 60px; }
-        }
-
-        .sr-only {
-            position: absolute; width: 1px; height: 1px; padding: 0;
-            margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;
-        }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
     </style>
 </head>
 <body>
-    <h1 aria-label="視覺助理">視覺助理</h1>
+    <h1>視覺助理 - 無障礙版</h1>
 
-    <div class="container" role="main" aria-label="主要操作區">
+    <div class="container">
         <video id="video" autoplay playsinline muted></video>
         <canvas id="canvas"></canvas>
 
-        <div class="btn-row" role="toolbar" aria-label="功能按鈕">
-            <button id="captureBtn" aria-label="擷取畫面：啟動相機拍照">📷 擷取畫面</button>
-            <button id="askBtn" disabled aria-label="詢問圖片：分析目前圖片">🤔 詢問圖片</button>
-            <button id="speakBtn" disabled aria-label="朗讀回覆：用語音讀出回覆內容">🔊 朗讀回覆</button>
-        </div>
+        <div id="status">準備就緒</div>
 
-        <label for="question" class="sr-only">輸入您要詢問的問題</label>
-        <input type="text" id="question" value="這張圖片裡有什麼？請用繁體中文簡短回答" aria-label="輸入問題">
+        <div id="response" tabindex="0">點擊下方「擷取畫面」開始</div>
 
-        <div id="response" aria-live="polite" aria-label="回覆內容" tabindex="0">回覆將顯示在此</div>
-        <div id="status" aria-live="assertive" aria-label="狀態訊息"></div>
+        <input type="text" id="question" value="這張圖片裡有什麼？請用繁體中文簡短回答" aria-label="詢問的問題">
 
-        <label class="file-label" tabindex="0" role="button" aria-label="從檔案選擇圖片">
-            📁 或從檔案選擇圖片
-            <input type="file" id="fileInput" accept="image/*">
-        </label>
-
-        <div class="api-section">
-            <label for="apiKey">Gemini API Key</label>
+        <!-- 設定區 -->
+        <div class="settings-area">
+            <label class="file-label">
+                📁 或從檔案選擇圖片
+                <input type="file" id="fileInput" accept="image/*">
+            </label>
+            
+            <label for="apiKey">Gemini API Key:</label>
             <div class="api-row">
-                <input type="password" id="apiKey" placeholder="輸入您的 Gemini API Key" aria-label="Gemini API Key">
-                <a href="https://aistudio.google.com/api-keys" target="_blank" aria-label="取得 Gemini API Key">取得 Key</a>
+                <input type="password" id="apiKey" placeholder="在此輸入 API Key">
+                <a href="https://aistudio.google.com/api-keys" target="_blank" style="color:#4285f4; text-decoration:none;">取得 Key</a>
             </div>
         </div>
+    </div>
+
+    <!-- 底部超大按鈕區 -->
+    <div class="bottom-nav">
+        <button id="captureBtn"><span>📷</span>擷取<br>畫面</button>
+        <button id="askBtn" disabled><span>🤔</span>詢問<br>圖片</button>
+        <button id="speakBtn" disabled><span>🔊</span>朗讀<br>回覆</button>
     </div>
 
     <script>
@@ -235,16 +188,14 @@
             let capturedImage = null;
             let lastResponse = '';
             let apiKey = '';
-            let modelName = 'gemini-2.5-flash';
+            let modelName = 'gemini-1.5-flash'; // 修正模型名稱
             let webcamStream = null;
-            let mediaRecorder = null;
 
             function speak(text, callback) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'zh-TW';
-                utterance.rate = 1.0;
-                utterance.onend = () => { if (callback) callback(); };
+                if (callback) utterance.onend = callback;
                 window.speechSynthesis.speak(utterance);
             }
 
@@ -256,96 +207,63 @@
             async function initWebcam() {
                 try {
                     webcamStream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                        video: { facingMode: 'environment', width: { ideal: 1280 } }
                     });
                     video.srcObject = webcamStream;
                     await video.play();
-                    setStatus('相機就緒', 'success');
+                    setStatus('相機已啟動', 'success');
                 } catch (err) {
-                    setStatus('相機無法啟動：' + err.message, 'error');
+                    setStatus('相機錯誤：' + err.message, 'error');
                 }
             }
 
-            function captureFromVideo() {
-                if (!video.videoWidth || !video.videoHeight) {
-                    setStatus('相機尚未就緒', 'error');
-                    speak('相機尚未就緒');
-                    return false;
-                }
+            captureBtn.addEventListener('click', () => {
+                if (!video.videoWidth) return;
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 canvas.getContext('2d').drawImage(video, 0, 0);
                 capturedImage = canvas.toDataURL('image/jpeg', 0.85);
                 askBtn.disabled = false;
-                setStatus('圖片已擷取！', 'success');
-                speak('圖片已擷取，可以詢問了');
-                return true;
-            }
-
-            function loadImageFromFile(file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        canvas.getContext('2d').drawImage(img, 0, 0);
-                        capturedImage = canvas.toDataURL('image/jpeg', 0.85);
-                        askBtn.disabled = false;
-                        setStatus('圖片已載入！', 'success');
-                        speak('圖片已載入，可以詢問了');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-
-            captureBtn.addEventListener('click', () => {
-                captureFromVideo();
+                setStatus('圖片已擷取', 'success');
+                speak('圖片已擷取');
             });
 
             fileInput.addEventListener('change', (e) => {
-                if (e.target.files.length > 0) {
-                    loadImageFromFile(e.target.files[0]);
+                if (e.target.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        capturedImage = event.target.result;
+                        askBtn.disabled = false;
+                        setStatus('檔案已載入', 'success');
+                        speak('圖片已載入');
+                    };
+                    reader.readAsDataURL(e.target.files[0]);
                 }
             });
 
-            apiKeyInput.addEventListener('input', (e) => {
-                apiKey = e.target.value.trim();
-            });
+            apiKeyInput.addEventListener('input', (e) => apiKey = e.target.value.trim());
 
             async function askGemini() {
-                if (!capturedImage) {
-                    setStatus('請先擷取或選擇圖片', 'error');
-                    speak('請先擷取或選擇圖片');
-                    return;
-                }
-                if (!apiKey) {
-                    setStatus('請輸入 API Key', 'error');
-                    speak('請輸入 API Key');
+                if (!capturedImage || !apiKey) {
+                    const msg = !apiKey ? '請先輸入 API Key' : '請先擷取圖片';
+                    setStatus(msg, 'error');
+                    speak(msg);
                     return;
                 }
 
-                askBtn.disabled = true;
-                captureBtn.disabled = true;
                 setStatus('分析中...', 'loading');
-                responseDiv.textContent = '思考中...';
-                speak('正在分析圖片，請稍候');
+                responseDiv.textContent = '正在分析圖片，請稍候...';
+                askBtn.disabled = true;
+                speak('正在分析');
 
                 const base64Data = capturedImage.split(',')[1];
-                const userQuestion = question.value.trim() || '這張圖片裡有什麼？';
-
                 const payload = {
                     contents: [{
                         parts: [
-                            { text: userQuestion + ' 請用繁體中文回答，保持簡短（一到兩句話以內）。' },
+                            { text: question.value + ' 請用繁體中文回答，兩句話以內。' },
                             { inline_data: { mime_type: 'image/jpeg', data: base64Data } }
                         ]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 2048
-                    }
+                    }]
                 };
 
                 try {
@@ -354,63 +272,27 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
-
-                    if (!res.ok) {
-                        const errData = await res.json();
-                        throw new Error(errData.error?.message || `API 錯誤 (${res.status})`);
-                    }
-
                     const data = await res.json();
-                    lastResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'No response';
+                    lastResponse = data.candidates[0].content.parts[0].text;
                     responseDiv.textContent = lastResponse;
                     speakBtn.disabled = false;
-                    setStatus('分析完成！', 'success');
-                    speak('分析完成，' + lastResponse);
+                    setStatus('分析完成', 'success');
+                    speak(lastResponse);
                 } catch (err) {
-                    lastResponse = '錯誤：' + err.message;
-                    responseDiv.textContent = lastResponse;
-                    setStatus('發生錯誤', 'error');
-                    speak('發生錯誤：' + err.message.substring(0, 60));
+                    setStatus('API 錯誤', 'error');
+                    responseDiv.textContent = '發生錯誤：' + err.message;
+                    speak('分析失敗');
                 } finally {
                     askBtn.disabled = false;
-                    captureBtn.disabled = false;
                 }
             }
 
             askBtn.addEventListener('click', askGemini);
-            question.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') askGemini();
-            });
+            speakBtn.addEventListener('click', () => speak(lastResponse));
 
-            speakBtn.addEventListener('click', () => {
-                if (lastResponse) {
-                    speak(lastResponse);
-                } else {
-                    speak('尚無回覆內容');
-                }
-            });
-
-            document.addEventListener('keydown', (e) => {
-                if (e.key === ' ' && e.target === document.body) {
-                    e.preventDefault();
-                    captureFromVideo();
-                }
-            });
-
-            let started = false;
-            async function boot() {
-                setStatus('啟動中...', 'info');
-                await initWebcam();
-
-                setTimeout(() => {
-                    speak('歡迎使用視覺助理。下方左邊是擷取畫面，中間是詢問圖片，右邊是朗讀回覆內容。您也可以從檔案選擇圖片。', () => {
-                        setStatus('就緒，請操作', 'success');
-                    });
-                }, 1000);
-                started = true;
-            }
-
-            document.addEventListener('DOMContentLoaded', boot);
+            // 啟動
+            initWebcam();
+            setTimeout(() => speak('視覺助理已啟動，按鈕在螢幕最下方'), 1000);
         })();
     </script>
 </body>
